@@ -1,5 +1,5 @@
 // 1. MASUKKAN URL GOOGLE APPS SCRIPT KAKAK DI SINI
-const API_URL = "https://script.google.com/macros/s/AKfycbxA-sM4Dtvolt8l8NH4UNJAT9cUGMzN9F786UQtN0IRn08Ivsi1B6tBhVi23i7DHU92/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxqUeddYdvGdVy0MeZycOrle2RysbYo9kns73c7PXhy71RY-oLNZtRFoQ-bgENe_1pF/exec";
 
 // 2. Fungsi Global Ambil Data dari Google Sheets (GET)
 async function ambilDataDariCloud(namaSheet) {
