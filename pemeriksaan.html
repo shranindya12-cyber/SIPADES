@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Fisik - SIPADES QR KEMUDO</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/custom.css">
+    
+    <script src="js/app.js"></script>
+</head>
+<body>
+
+<div class="wrapper">
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h4 class="text-white fw-bold m-0">SIPADES QR</h4>
+            <small class="text-white-50">Desa Kemudo</small>
+        </div>
+        <ul class="list-unstyled components mt-3">
+            <li>
+                <a href="dashboard.html"><i class="fa-solid fa-gauge me-2"></i> Dashboard</a>
+            </li>
+            <li>
+                <a href="index.html"><i class="fa-solid fa-box me-2"></i> Data Inventaris</a>
+            </li>
+            <li class="nav-active">
+                <a href="pemeriksaan.html"><i class="fa-solid fa-clipboard-check me-2"></i> Monitoring Fisik</a>
+            </li>
+            <li>
+                <a href="riwayat.html"><i class="fa-solid fa-history me-2"></i> Audit Log Perubahan</a>
+            </li>
+            <li class="mt-5">
+                <a href="#" onclick="logoutSistem()" class="text-danger"><i class="fa-solid fa-right-from-bracket me-2"></i> Keluar Sesi</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div id="content">
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
+            <h5 class="m-0 fw-bold text-secondary"><i class="fa-solid fa-file-signature text-success me-2"></i> Input Kondisi Fisik</h5>
+            <div class="bg-light rounded px-3 py-1 text-sm fw-medium text-secondary" id="namaAktorInfo">Memuat Petugas...</div>
+        </div>
+        
+        <div class="row g-4 text-dark">
+            <div class="col-md-7">
+                <div class="card p-4 bg-white border-0 shadow-sm">
+                    <h6 class="fw-bold text-success border-bottom pb-2 mb-3"><i class="fa-solid fa-square-poll-horizontal me-2"></i>Formulir Pemeriksaan Berkala</h6>
+                    
+                    <form id="formInputPemeriksaan" onsubmit="simpanLaporanInspeksi(event)">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">PILIH BARANG INVENTARIS</label>
+                            <select id="pilihAsetTarget" class="form-select form-select-sm" onchange="sinkronisasiDataForm()" required>
+                                <option value="">-- Hubungkan dengan Kode / Nama Aset --</option>
+                            </select>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small text-muted">KODE ASET</label>
+                                <input type="text" id="tampilKodeAset" class="form-control form-control-sm bg-light" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small text-muted">JENIS PENDATAAN</label>
+                                <input type="text" id="tampilJenisAset" class="form-control form-control-sm bg-light" readonly>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">STATUS KONDISI TERBARU</label>
+                            <select id="inputKondisiTerbaru" class="form-select form-select-sm" required>
+                                <option value="Baik">Baik (Berfungsi Normal)</option>
+                                <option value="Rusak Ringan">Rusak Ringan (Butuh Servis Kecil)</option>
+                                <option value="Rusak Berat">Rusak Berat (Mati Total/Afkir)</option>
+                                <option value="Hilang">Hilang / Dalam Proses Hukum</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">CATATAN NOTULENSI PETUGAS</label>
+                            <textarea id="inputCatatanFisik" class="form-control text-sm" rows="3" placeholder="Contoh: Kondisi layar LCD baret tipis, mesin cetak printer butuh kuras tinta." required></textarea>
+                        </div>
+
+                        <button type="submit" id="btnSubmitForm" class="btn btn-success w-100 fw-bold btn-sm py-2">
+                            <i class="fa-solid fa-cloud-arrow-up me-2"></i> KIRIM LAPORAN KE CLOUD
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card p-4 bg-light border-0 shadow-sm h-100">
+                    <h6 class="fw-bold text-dark"><i class="fa-solid fa-circle-info text-success me-2"></i>Aturan Monitoring</h6>
+                    <ol class="small text-muted ps-3 mt-2" style="line-height: 1.8;">
+                        <li>Pilih nama aset terlebih dahulu untuk menarik data legalitas kode barang.</li>
+                        <li>Pastikan pengecekan fisik dilakukan secara riil langsung di lapangan penempatan barang.</li>
+                        <li>Sistem otomatis akan mencatat nama Anda, tanggal, dan waktu pengunggahan data ke sistem audit **Log** secara otomatis.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let daftarAsetGlobal = [];
+
+    document.addEventListener("DOMContentLoaded", async function() {
+        // Ambil data aset secara langsung melalui fungsi jembatan global di js/app.js
+        daftarAsetGlobal = await ambilDataDariCloud("Aset");
+        
+        const dropdown = document.getElementById("pilihAsetTarget");
+        daftarAsetGlobal.forEach(item => {
+            dropdown.innerHTML += `<option value="${item.kode_aset}">${item.kode_aset} - ${item.nama_aset}</option>`;
+        });
+    });
+
+    function sinkronisasiDataForm() {
+        const kodeTerpilih = document.getElementById("pilihAsetTarget").value;
+        const item = daftarAsetGlobal.find(x => x.kode_aset === kodeTerpilih);
+
+        if (item) {
+            document.getElementById("tampilKodeAset").value = item.kode_aset;
+            document.getElementById("tampilJenisAset").value = item.jenis_aset;
+            document.getElementById("inputKondisiTerbaru").value = item.kondisi || "Baik";
+        } else {
+            document.getElementById("tampilKodeAset").value = "";
+            document.getElementById("tampilJenisAset").value = "";
+        }
+    }
+
+    async function simpanLaporanInspeksi(event) {
+        event.preventDefault();
+
+        const kodeAset = document.getElementById("tampilKodeAset").value;
+        const kondisi = document.getElementById("inputKondisiTerbaru").value;
+        const catatan = document.getElementById("inputCatatanFisik").value.trim();
+        const petugas = localStorage.getItem("sipades_nama") || "Staf Desa";
+        const username = localStorage.getItem("sipades_user") || "operator";
+        
+        const btnSubmit = document.getElementById("btnSubmitForm");
+        
+        // Ambil nama aset pendukung
+        const objekAset = daftarAsetGlobal.find(x => x.kode_aset === kodeAset);
+        const namaAset = objekAset ? objekAset.nama_aset : "Aset Tidak Terdefinisi";
+
+        // Atur Format Tanggal
+        const skrg = new Date();
+        const tglFormat = `${skrg.getDate()}/${skrg.getMonth()+1}/${skrg.getFullYear()}`;
+        const timestampLengkap = `${tglFormat} ${skrg.getHours()}:${skrg.getMinutes()}:${skrg.getSeconds()}`;
+
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Mengirim Laporan...`;
+
+        // 1. Buat Payload data kirim untuk tab "Pemeriksaan"
+        const payloadPemeriksaan = {
+            action: "pemeriksaan",
+            tanggal: tglFormat,
+            kode_aset: kodeAset,
+            nama_aset: namaAset,
+            petugas: petugas,
+            kondisi: kondisi,
+            catatan: catatan
+        };
+
+        // 2. Buat Payload data kirim log audit keamanan untuk tab "Log"
+        const payloadLog = {
+            action: "log",
+            tanggal: timestampLengkap,
+            user: username,
+            aktivitas: "Pemeriksaan Aset",
+            detail: `Melakukan input fisik berkala pada kode barang: ${kodeAset} (${kondisi})`
+        };
+
+        // Kirim beruntun menggunakan fungsi pengiriman aman cloud di js/app.js
+        const status1 = await kirimDataAmanKeCloud(payloadPemeriksaan);
+        const status2 = await kirimDataAmanKeCloud(payloadLog);
+
+        if (status1 && status2) {
+            alert("Laporan monitoring fisik berhasil direkam ke dalam database desa.");
+            document.getElementById("formInputPemeriksaan").reset();
+            window.location.href = "index.html"; // Balikkan ke daftar utama jika sukses
+        } else {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = `<i class="fa-solid fa-cloud-arrow-up me-2"></i> KIRIM LAPORAN KE CLOUD`;
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,118 @@
+/* =========================================================================
+   STANDARDISASI & VARIABEL WARNA HIJAU DESA KEMUDO
+   ========================================================================= */
+:root {
+    --primary-desa: #1b5e20;     /* Hijau Tua Utama */
+    --secondary-desa: #2e7d32;   /* Hijau Muda */
+    --dark-sidebar: #0b2e13;     /* Hijau Gelap Kerangka */
+    --light-bg: #f8fafc;         /* Latar Belakang Abu Lembut */
+    --slate-text: #334155;       /* Warna Teks Utama */
+    --border-color: #e2e8f0;     /* Pembatas Tabel */
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--light-bg);
+    color: var(--slate-text);
+    margin: 0;
+    padding: 0;
+}
+
+/* =========================================================================
+   KOMPONEN LAYOUT & SIDEBAR NAVIGASI
+   ========================================================================= */
+.wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+#sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    background: var(--dark-sidebar);
+    min-height: 100vh;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+}
+
+#sidebar .sidebar-header {
+    padding: 20px;
+    background: #061f0c;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#sidebar ul li a {
+    padding: 14px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    display: block;
+    color: #a3b899;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+#sidebar ul li a:hover {
+    color: #ffffff;
+    background: var(--secondary-desa);
+    padding-left: 25px;
+}
+
+#sidebar ul li.nav-active a {
+    color: #ffffff !important;
+    background: var(--primary-desa) !important;
+    font-weight: 600;
+}
+
+#content {
+    width: 100%;
+    padding: 24px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* =========================================================================
+   DESAIN KARTU & TABEL DATA
+   ========================================================================= */
+.card {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    background-color: #ffffff;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: #f8fafc !important;
+    color: #64748b !important;
+    font-weight: 600;
+    text-uppercase: true;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 14px;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.table tbody td {
+    padding: 14px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13.5px;
+}
+
+/* =========================================================================
+   PENGATURAN MODE CETAK (PRINT STIKER QR)
+   ========================================================================= */
+@media print {
+    #sidebar, .btn, .no-print, header, footer {
+        display: none !important;
+    }
+    #content {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .card-aset {
+        border: 2px dashed #000000 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+}

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Inventaris - SIPADES QR KEMUDO</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/custom.css">
+    
+    <script src="js/app.js"></script>
+</head>
+<body>
+
+<div class="wrapper">
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h4 class="text-white fw-bold m-0">SIPADES QR</h4>
+            <small class="text-white-50">Desa Kemudo</small>
+        </div>
+        <ul class="list-unstyled components mt-3">
+            <li>
+                <a href="dashboard.html"><i class="fa-solid fa-gauge me-2"></i> Dashboard</a>
+            </li>
+            <li class="nav-active">
+                <a href="index.html"><i class="fa-solid fa-box me-2"></i> Data Inventaris</a>
+            </li>
+            <li>
+                <a href="pemeriksaan.html"><i class="fa-solid fa-clipboard-check me-2"></i> Monitoring Fisik</a>
+            </li>
+            <li>
+                <a href="riwayat.html"><i class="fa-solid fa-history me-2"></i> Audit Log Perubahan</a>
+            </li>
+            <li class="mt-5">
+                <a href="#" onclick="logoutSistem()" class="text-danger"><i class="fa-solid fa-right-from-bracket me-2"></i> Keluar Sesi</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div id="content">
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
+            <h5 class="m-0 fw-bold text-secondary"><i class="fa-solid fa-boxes-stacked text-success me-2"></i> Inventaris Aset Desa</h5>
+            <div class="bg-light rounded px-3 py-1 text-sm fw-medium text-secondary" id="namaAktorInfo">Memuat Petugas...</div>
+        </div>
+        
+        <div class="card bg-white border-0 shadow-sm text-dark">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="m-0 fw-bold text-success"><i class="fa-solid fa-list me-2"></i>Daftar Registrasi Barang / Logistik</h6>
+            </div>
+            
+            <div class="card-body bg-light border-bottom border-top py-3">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <select id="selectKategori" class="form-select form-select-sm" onchange="eksekusiFilterLokal()">
+                            <option value="">- Semua Kategori -</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="selectLokasi" class="form-select form-select-sm" onchange="eksekusiFilterLokal()">
+                            <option value="">- Semua Lokasi -</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                            <input type="text" id="inputKataKunci" class="form-control" placeholder="Cari berdasarkan kode aset atau nama barang..." onkeyup="eksekusiFilterLokal()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3" style="width: 15%;">KODE ASET</th>
+                            <th style="width: 25%;">NAMA BARANG</th>
+                            <th style="width: 15%;">KATEGORI</th>
+                            <th style="width: 15%;">LOKASI</th>
+                            <th style="width: 10%;">VOLUME</th>
+                            <th style="width: 10%;">KONDISI</th>
+                            <th class="text-center" style="width: 10%;">AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelAsetBody">
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span> Membuka data cloud spreadsheet...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Memori penyimpanan lokal untuk menampung data pencarian tanpa hit API berulang kali
+    let dataAsetLokal = [];
+
+    document.addEventListener("DOMContentLoaded", async function() {
+        // Ambil data dari Tab "Aset" di Google Sheets melalui fungsi global js/app.js
+        dataAsetLokal = await ambilDataDariCloud("Aset");
+        
+        // Buat opsi pilihan dropdown filter secara otomatis berdasarkan data yang ada di Sheets
+        const kategoriSelect = document.getElementById("selectKategori");
+        const lokasiSelect = document.getElementById("selectLokasi");
+        
+        const daftarKategori = [...new Set(dataAsetLokal.map(x => x.kategori).filter(Boolean))];
+        const daftarLokasi = [...new Set(dataAsetLokal.map(x => x.lokasi).filter(Boolean))];
+        
+        daftarKategori.forEach(k => kategoriSelect.innerHTML += `<option value="${k}">${k}</option>`);
+        daftarLokasi.forEach(l => lokasiSelect.innerHTML += `<option value="${l}">${l}</option>`);
+        
+        // Gambar isi tabel untuk pertama kali
+        renderDataKeTabel(dataAsetLokal);
+    });
+
+    function renderDataKeTabel(data) {
+        const tbody = document.getElementById("tabelAsetBody");
+        tbody.innerHTML = "";
+        
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Data aset tidak ditemukan atau tidak cocok dengan filter.</td></tr>`;
+            return;
+        }
+        
+        data.forEach(barang => {
+            // Logika penentuan label kondisi teks berdasarkan jenis barang (Kelompok / Individu)
+            let statusBadge = "";
+            if (barang.jenis_aset === "Kelompok") {
+                statusBadge = `<span class="badge bg-light text-dark border">B: ${barang.baik} | R: ${parseInt(barang.rusak_ringan) + parseInt(barang.rusak_berat)}</span>`;
+            } else {
+                let warnaBadge = barang.kondisi === "Baik" ? "bg-primary" : (barang.kondisi === "Hilang" ? "bg-danger" : "bg-warning text-dark");
+                statusBadge = `<span class="badge ${warnaBadge}">${barang.kondisi}</span>`;
+            }
+
+            tbody.innerHTML += `<tr>
+                <td class="ps-3 fw-bold text-dark">${barang.kode_aset}</td>
+                <td><span class="fw-medium">${barang.nama_aset}</span></td>
+                <td><span class="text-muted text-xs">${barang.kategori}</span></td>
+                <td>${barang.lokasi}</td>
+                <td class="fw-bold">${barang.jumlah_total} Unit</td>
+                <td>${statusBadge}</td>
+                <td class="text-center">
+                    <a href="detail-aset.html?id=${barang.id}" class="btn btn-sm btn-outline-success py-1 px-2" style="font-size: 11px;">
+                        <i class="fa-solid fa-qrcode"></i> Lihat QR
+                    </a>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function eksekusiFilterLokal() {
+        const kategoriDipilih = document.getElementById("selectKategori").value;
+        const lokasiDipilih = document.getElementById("selectLokasi").value;
+        const kataKunci = document.getElementById("inputKataKunci").value.toLowerCase().trim();
+        
+        // Saring data secara real-time di memori browser
+        const hasilSaring = dataAsetLokal.filter(barang => {
+            const cocokKategori = !kategoriDipilih || barang.kategori === kategoriDipilih;
+            const cocokLokasi = !lokasiDipilih || barang.lokasi === lokasiDipilih;
+            const cocokKataKunci = !kataKunci || 
+                                barang.nama_aset.toLowerCase().includes(kataKunci) || 
+                                barang.kode_aset.toLowerCase().includes(kataKunci);
+            
+            return cocokKategori && cocokLokasi && cocokKataKunci;
+        });
+        
+        renderDataKeTabel(hasilSaring);
+    }
+</script>
+
+</body>
+</html>

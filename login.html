@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Log Masuk - SIPADES QR KEMUDO</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/custom.css">
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%) !important;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 15px;
+        }
+        .btn-success-desa {
+            background-color: #1b5e20 !important;
+            border-color: #1b5e20 !important;
+            color: #ffffff !important;
+            transition: all 0.2s;
+        }
+        .btn-success-desa:hover {
+            background-color: #2e7d32 !important;
+            border-color: #2e7d32 !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-box">
+    <div class="card p-4 shadow-lg border-0">
+        <div class="text-center mb-4">
+            <i class="fa-solid fa-building-columns fa-3x text-success mb-2"></i>
+            <h5 class="fw-bold m-0 text-dark">SIPADES QR KEMUDO</h5>
+            <small class="text-muted">Sistem Informasi Pengelolaan Aset Desa</small>
+        </div>
+
+        <div id="notifikasiLogin" class="d-none alert alert-danger border-0 text-center py-2" style="font-size: 13px;"></div>
+        
+        <form id="formLogin" onsubmit="eksekusiLoginAman(event)">
+            <div class="mb-3">
+                <label class="form-label fw-bold text-muted text-uppercase small" style="letter-spacing: 0.5px;">Nama Pengguna (Username)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-user text-muted"></i></span>
+                    <input type="text" id="inputUsername" class="form-control bg-light border-start-0" placeholder="Masukkan username" required>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label fw-bold text-muted text-uppercase small" style="letter-spacing: 0.5px;">PIN Token Akses</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-key text-muted"></i></span>
+                    <input type="password" id="inputPIN" class="form-control bg-light border-start-0" placeholder="Masukkan 6 digit PIN" maxlength="6" inputmode="numeric" required>
+                </div>
+            </div>
+            
+            <button type="submit" id="tombolMasuk" class="btn btn-success-desa w-100 fw-bold py-2 shadow-sm">
+                <i class="fa-solid fa-right-to-bracket me-2"></i> MASUK PANEL UTAMA
+            </button>
+        </form>
+    </div>
+    <div class="text-center mt-3 text-muted small" style="font-size: 11px;">
+        &copy; 2026 Pemerintah Desa Kemudo. <br>Tatakelola Komputasi Inventaris Desa Mandiri.
+    </div>
+</div>
+
+<script>
+    // Taruh kembali URL Web App Google Apps Script kamu di sini untuk cadangan lokal halaman login
+    const API_TARGET = "https://script.google.com/macros/s/AKfycbxA-sM4Dtvolt8l8NH4UNJAT9cUGMzN9F786UQtN0IRn08Ivsi1B6tBhVi23i7DHU92/exec";
+
+    async function eksekusiLoginAman(event) {
+        event.preventDefault();
+        
+        const username = document.getElementById("inputUsername").value.trim();
+        const pinToken = document.getElementById("inputPIN").value.trim();
+        const notifBox = document.getElementById("notifikasiLogin");
+        const btnMasuk = document.getElementById("tombolMasuk");
+
+        // Animasi Loading saat memproses data
+        notifBox.classList.add("d-none");
+        btnMasuk.disabled = true;
+        btnMasuk.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Memvalidasi Kunci Akses...`;
+
+        try {
+            // Ambil data operator dari Tab "User" di Google Sheets
+            const respon = await fetch(`${API_TARGET}?sheet=User`);
+            if (!respon.ok) throw new Error();
+            
+            const daftarUser = await respon.json();
+            
+            // Cari data user yang cocok dengan input teks
+            const userDitemukan = daftarUser.find(u => u.username === username && String(u.pin_token) === pinToken);
+
+            if (userDitemukan) {
+                // Jika sukses, simpan kredensial ke memori lokal browser (LocalStorage)
+                localStorage.setItem("sipades_user", userDitemukan.username);
+                localStorage.setItem("sipades_token", userDitemukan.pin_token);
+                localStorage.setItem("sipades_nama", userDitemukan.nama_lengkap);
+                localStorage.setItem("sipades_role", userDitemukan.role);
+
+                // Tembakkan langsung ke halaman Dashboard Utama
+                window.location.href = "dashboard.html";
+            } else {
+                // Jika salah masukkan kombinasi sandi/user
+                notifBox.innerText = "Kombinasi Username atau PIN Token salah!";
+                notifBox.classList.remove("d-none");
+                btnMasuk.disabled = false;
+                btnMasuk.innerHTML = `<i class="fa-solid fa-right-to-bracket me-2"></i> MASUK PANEL UTAMA`;
+            }
+
+        } catch (error) {
+            notifBox.innerText = "Gagal terhubung ke database cloud Google Sheets.";
+            notifBox.classList.remove("d-none");
+            btnMasuk.disabled = false;
+            btnMasuk.innerHTML = `<i class="fa-solid fa-right-to-bracket me-2"></i> MASUK PANEL UTAMA`;
+        }
+    }
+</script>
+
+</body>
+</html>
