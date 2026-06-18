@@ -168,19 +168,30 @@
         
         data.forEach(barang => {
             let statusBadge = "";
+            
+            // Cek jika jenis aset adalah Kelompok (menggunakan huruf sesuai spreadsheet kamu)
             if (barang.jenis_aset === "Kelompok") {
-                statusBadge = `<span class="badge bg-light text-dark border">B: ${barang.baik} | R: ${parseInt(barang.rusak_ringan || 0) + parseInt(barang.rusak_berat || 0)}</span>`;
+                // Mengantisipasi nilai kosong dengan memberikan nilai default 0
+                let baik = parseInt(barang.baik) || 0;
+                let rusakRingan = parseInt(barang.rusak_ringan) || 0;
+                let rusakBerat = parseInt(barang.rusak_berat) || 0;
+                let totalRusak = rusakRingan + rusakBerat;
+                
+                statusBadge = `<span class="badge bg-light text-dark border">B: ${baik} | R: ${totalRusak}</span>`;
             } else {
-                let warnaBadge = barang.kondisi === "Baik" ? "bg-primary" : (barang.kondisi === "Hilang" ? "bg-danger" : "bg-warning text-dark");
-                statusBadge = `<span class="badge ${warnaBadge}">${barang.kondisi || 'Baik'}</span>`;
+                // Jika individu, ambil kolom 'kondisi'
+                let kondisiAset = barang.kondisi || "Baik";
+                let warnaBadge = kondisiAset === "Baik" ? "bg-primary" : (kondisiAset === "Hilang" ? "bg-danger" : "bg-warning text-dark");
+                statusBadge = `<span class="badge ${warnaBadge}">${kondisiAset}</span>`;
             }
 
+            // Render baris data ke dalam tabel HTML
             tbody.innerHTML += `<tr>
-                <td class="ps-3 fw-bold text-dark">${barang.kode_aset}</td>
-                <td><span class="fw-medium">${barang.nama_aset}</span></td>
-                <td><span class="text-muted text-xs">${barang.kategori}</span></td>
-                <td>${barang.lokasi}</td>
-                <td class="fw-bold">${barang.jumlah_total} Unit</td>
+                <td class="ps-3 fw-bold text-dark">${barang.kode_aset || '-'}</td>
+                <td><span class="fw-medium">${barang.nama_aset || '-'}</span></td>
+                <td><span class="text-muted text-xs">${barang.kategori || '-'}</span></td>
+                <td>${barang.lokasi || '-'}</td>
+                <td class="fw-bold">${barang.jumlah_total || '0'} Unit</td>
                 <td>${statusBadge}</td>
                 <td class="text-center">
                     <a href="detail-aset.html?id=${barang.id}" class="btn btn-sm btn-outline-success py-1 px-2" style="font-size: 11px;">
