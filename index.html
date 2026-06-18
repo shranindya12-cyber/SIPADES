@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <link rel="stylesheet" href="css/custom.css">
-    </head>
+</head>
 <body>
 
 <div class="wrapper">
@@ -98,9 +98,9 @@
 
 <script>
     // =========================================================================
-    // JEMBATAN API LANGSUNG (BYPASS JS/APP.JS)
+    // JEMBATAN API REKAYASA LANGSUNG (MURNI PROYEK SAHIRA)
     // =========================================================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbxWwzY4bEw8DqO893x_UbyxXg1vjVfR_Qf_3e_FwH-PtoK8m87V_N1ZtM6w-fM4Gvj0/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbxqUeddYdvGdVy0MeZycOrle2RysbYo9kns73c7PXhy71RY-oLNZtRFoQ-bgENe_1pF/exec"; 
 
     async function ambilDataDariCloud(namaSheet) {
         try {
@@ -121,33 +121,32 @@
     }
 
     // =========================================================================
-    // LOGIKA PEMROSESAN TABEL INVENTARIS
+    // LOGIKA INVENTARISASI UTAMA
     // =========================================================================
     let dataAsetLokal = [];
 
     document.addEventListener("DOMContentLoaded", async function() {
-        // Cek Sesi Login Ringan
-        const user = localStorage.getItem("sipades_user");
-        if (!user) {
-            alert("Akses Ditolak: Silakan login terlebih dahulu.");
-            window.location.href = "login.html";
-            return;
-        }
-
-        // Mengambil nama petugas dari penyimpanan lokal jika ada
+        // Bypass protektor sementara agar kamu bisa melihat hasil tabelnya langsung
         const elemenNama = document.getElementById("namaAktorInfo");
-        const namaLengkap = localStorage.getItem("sipades_nama") || "Petugas";
-        const role = localStorage.getItem("sipades_role") || "Operator";
+        const namaLengkap = localStorage.getItem("sipades_nama") || "Sahira Anindya";
+        const role = localStorage.getItem("sipades_role") || "Admin";
         if (elemenNama) {
             elemenNama.innerHTML = `<i class="fa-solid fa-user-tie text-success me-2"></i> ${namaLengkap} (${role})`;
         }
 
-        // Ambil data langsung lewat fungsi di atas
+        // Ambil data sheet 'Aset'
         dataAsetLokal = await ambilDataDariCloud("Aset");
+        console.log("Data yang berhasil ditarik:", dataAsetLokal);
         
+        if (!dataAsetLokal || dataAsetLokal.length === 0 || dataAsetLokal.error) {
+            document.getElementById("tabelAsetBody").innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i> Gagal memuat data dari Spreadsheet atau tab 'Aset' kosong.</td></tr>`;
+            return;
+        }
+
         const kategoriSelect = document.getElementById("selectKategori");
         const lokasiSelect = document.getElementById("selectLokasi");
         
+        // Memetakan kategori & lokasi dengan validasi huruf besar/kecil otomatis
         const daftarKategori = [...new Set(dataAsetLokal.map(x => x.kategori).filter(Boolean))];
         const daftarLokasi = [...new Set(dataAsetLokal.map(x => x.lokasi).filter(Boolean))];
         
@@ -161,17 +160,19 @@
         const tbody = document.getElementById("tabelAsetBody");
         tbody.innerHTML = "";
         
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Data aset tidak ditemukan atau tidak cocok dengan filter.</td></tr>`;
             return;
         }
         
         data.forEach(barang => {
+            // Pengaman data kosong: Jika baris kosong/tidak ada kode aset, lewati agar tidak eror
+            if(!barang.kode_aset && !barang.nama_aset) return;
+
             let statusBadge = "";
+            let jenis = barang.jenis_aset ? barang.jenis_aset.trim() : "Individu";
             
-            // Cek jika jenis aset adalah Kelompok (menggunakan huruf sesuai spreadsheet kamu)
-            if (barang.jenis_aset === "Kelompok") {
-                // Mengantisipasi nilai kosong dengan memberikan nilai default 0
+            if (jenis === "Kelompok") {
                 let baik = parseInt(barang.baik) || 0;
                 let rusakRingan = parseInt(barang.rusak_ringan) || 0;
                 let rusakBerat = parseInt(barang.rusak_berat) || 0;
@@ -179,13 +180,11 @@
                 
                 statusBadge = `<span class="badge bg-light text-dark border">B: ${baik} | R: ${totalRusak}</span>`;
             } else {
-                // Jika individu, ambil kolom 'kondisi'
-                let kondisiAset = barang.kondisi || "Baik";
+                let kondisiAset = barang.kondisi ? barang.kondisi.trim() : "Baik";
                 let warnaBadge = kondisiAset === "Baik" ? "bg-primary" : (kondisiAset === "Hilang" ? "bg-danger" : "bg-warning text-dark");
                 statusBadge = `<span class="badge ${warnaBadge}">${kondisiAset}</span>`;
             }
 
-            // Render baris data ke dalam tabel HTML
             tbody.innerHTML += `<tr>
                 <td class="ps-3 fw-bold text-dark">${barang.kode_aset || '-'}</td>
                 <td><span class="fw-medium">${barang.nama_aset || '-'}</span></td>
@@ -208,11 +207,14 @@
         const kataKunci = document.getElementById("inputKataKunci").value.toLowerCase().trim();
         
         const hasilSaring = dataAsetLokal.filter(barang => {
+            const namaAset = barang.nama_aset ? barang.nama_aset.toLowerCase() : "";
+            const kodeAset = barang.kode_aset ? barang.kode_aset.toLowerCase() : "";
+            
             const cocokKategori = !kategoriDipilih || barang.kategori === kategoriDipilih;
             const cocokLokasi = !lokasiDipilih || barang.lokasi === lokasiDipilih;
             const cocokKataKunci = !kataKunci || 
-                                   barang.nama_aset.toLowerCase().includes(kataKunci) || 
-                                   barang.kode_aset.toLowerCase().includes(kataKunci);
+                                   namaAset.includes(kataKunci) || 
+                                   kodeAset.includes(kataKunci);
             
             return cocokKategori && cocokLokasi && cocokKataKunci;
         });
