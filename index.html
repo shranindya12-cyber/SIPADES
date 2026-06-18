@@ -99,14 +99,39 @@
 </div>
 
 <script>
-    // Memori penyimpanan lokal untuk menampung data pencarian tanpa hit API berulang kali
+    // =========================================================================
+    // JEMBATAN API LANGSUNG (BYPASS JS/APP.JS)
+    // =========================================================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbxWwzY4bEw8DqO893x_UbyxXg1vjVfR_Qf_3e_FwH-PtoK8m87V_N1ZtM6w-fM4Gvj0/exec"; 
+
+    async function ambilDataDariCloud(namaSheet) {
+        try {
+            const respon = await fetch(`${API_URL}?sheet=${namaSheet}`);
+            if (!respon.ok) throw new Error("Gagal mengambil data.");
+            return await respon.json();
+        } catch (eror) {
+            console.error("Eror API Ambil Data:", eror);
+            return [];
+        }
+    }
+
+    // =========================================================================
+    // LOGIKA PEMROSESAN TABEL INVENTARIS
+    // =========================================================================
     let dataAsetLokal = [];
 
     document.addEventListener("DOMContentLoaded", async function() {
-        // Ambil data dari Tab "Aset" di Google Sheets melalui fungsi global js/app.js
+        // Mengambil nama petugas dari penyimpanan lokal jika ada
+        const elemenNama = document.getElementById("namaAktorInfo");
+        const namaLengkap = localStorage.getItem("sipades_nama") || "Petugas";
+        const role = localStorage.getItem("sipades_role") || "Operator";
+        if (elemenNama) {
+            elemenNama.innerHTML = `<i class="fa-solid fa-user-tie text-success me-2"></i> ${namaLengkap} (${role})`;
+        }
+
+        // Ambil data langsung lewat fungsi di atas
         dataAsetLokal = await ambilDataDariCloud("Aset");
         
-        // Buat opsi pilihan dropdown filter secara otomatis berdasarkan data yang ada di Sheets
         const kategoriSelect = document.getElementById("selectKategori");
         const lokasiSelect = document.getElementById("selectLokasi");
         
@@ -116,7 +141,6 @@
         daftarKategori.forEach(k => kategoriSelect.innerHTML += `<option value="${k}">${k}</option>`);
         daftarLokasi.forEach(l => lokasiSelect.innerHTML += `<option value="${l}">${l}</option>`);
         
-        // Gambar isi tabel untuk pertama kali
         renderDataKeTabel(dataAsetLokal);
     });
 
@@ -130,7 +154,6 @@
         }
         
         data.forEach(barang => {
-            // Logika penentuan label kondisi teks berdasarkan jenis barang (Kelompok / Individu)
             let statusBadge = "";
             if (barang.jenis_aset === "Kelompok") {
                 statusBadge = `<span class="badge bg-light text-dark border">B: ${barang.baik} | R: ${parseInt(barang.rusak_ringan) + parseInt(barang.rusak_berat)}</span>`;
@@ -160,13 +183,12 @@
         const lokasiDipilih = document.getElementById("selectLokasi").value;
         const kataKunci = document.getElementById("inputKataKunci").value.toLowerCase().trim();
         
-        // Saring data secara real-time di memori browser
         const hasilSaring = dataAsetLokal.filter(barang => {
             const cocokKategori = !kategoriDipilih || barang.kategori === kategoriDipilih;
             const cocokLokasi = !lokasiDipilih || barang.lokasi === lokasiDipilih;
             const cocokKataKunci = !kataKunci || 
-                                barang.nama_aset.toLowerCase().includes(kataKunci) || 
-                                barang.kode_aset.toLowerCase().includes(kataKunci);
+                                   barang.nama_aset.toLowerCase().includes(kataKunci) || 
+                                   barang.kode_aset.toLowerCase().includes(kataKunci);
             
             return cocokKategori && cocokLokasi && cocokKataKunci;
         });
